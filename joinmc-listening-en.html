@@ -1,0 +1,2767 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JoinMC — Social Listening</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --primary: #1890ff;
+      --primary-hover: #40a9ff;
+      --positive: #52c41a;
+      --neutral: #fa8c16;
+      --negative: #f5222d;
+      --bg-page: #f0f2f5;
+      --bg-card: #ffffff;
+      --border: #e8e8e8;
+      --text: rgba(0, 0, 0, 0.85);
+      --text-secondary: rgba(0, 0, 0, 0.45);
+      --sidebar-list: #fafafa;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 1px 4px rgba(0, 0, 0, 0.04);
+      --radius: 4px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "Open Sans", "Segoe UI", system-ui, sans-serif;
+      font-size: 14px;
+      color: var(--text);
+      background: var(--bg-page);
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+
+    a { color: var(--primary); text-decoration: none; cursor: pointer; }
+    a:hover { opacity: 0.85; }
+
+    .hidden { display: none !important; }
+
+    /* ========== Shared top header ========== */
+    .app-header {
+      height: 56px;
+      background: #fff;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .app-header:not(.is-detail) .header-back {
+      display: none;
+    }
+
+    .app-header.is-detail .header-back {
+      display: inline-flex;
+      flex-shrink: 0;
+      padding: 5px 14px;
+      font-size: 13px;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .logo-img {
+      display: block;
+      height: 32px;
+      width: auto;
+      max-width: 180px;
+      object-fit: contain;
+    }
+
+    .env-select {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text-secondary);
+      font-size: 13px;
+      cursor: default;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .header-link { color: var(--text-secondary); font-size: 13px; }
+    .icon-grid {
+      width: 20px;
+      height: 20px;
+      display: grid;
+      grid-template: repeat(3, 1fr) / repeat(3, 1fr);
+      gap: 2px;
+      cursor: default;
+    }
+    .icon-grid span {
+      background: var(--text-secondary);
+      border-radius: 1px;
+    }
+
+    .user-dd {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    .chev {
+      border: solid var(--text-secondary);
+      border-width: 0 1px 1px 0;
+      display: inline-block;
+      padding: 3px;
+      transform: rotate(45deg);
+      margin-top: -2px;
+    }
+
+    /* ========== LIST PAGE layout ========== */
+    #page-list .main-wrap {
+      display: flex;
+      padding-top: 56px;
+      min-height: 100vh;
+    }
+
+    .list-sidebar {
+      width: 216px;
+      background: var(--sidebar-list);
+      border-right: 1px solid var(--border);
+      display: flex;
+      position: fixed;
+      left: 0;
+      top: 56px;
+      bottom: 0;
+      z-index: 50;
+    }
+
+    .list-icon-rail {
+      width: 56px;
+      background: #f5f5f5;
+      border-right: 1px solid var(--border);
+      padding: 12px 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .rail-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-secondary);
+      font-size: 18px;
+    }
+
+    .rail-icon.active {
+      background: #e6f7ff;
+      color: var(--primary);
+    }
+
+    .list-menu-col {
+      flex: 1;
+      padding: 12px 0;
+    }
+
+    .menu-item {
+      padding: 12px 16px;
+      margin: 0 8px;
+      border-radius: var(--radius);
+      color: var(--text-secondary);
+      font-size: 14px;
+      cursor: default;
+    }
+
+    .menu-item.active {
+      background: #e6f7ff;
+      color: var(--primary);
+      font-weight: 500;
+    }
+
+    .list-content {
+      margin-left: 216px;
+      flex: 1;
+      padding: 20px 24px 80px;
+      background: #fff;
+      min-height: calc(100vh - 56px);
+    }
+
+    .breadcrumb {
+      color: var(--text-secondary);
+      font-size: 13px;
+      margin-bottom: 16px;
+    }
+
+    .breadcrumb strong { color: var(--text); font-weight: 500; }
+
+    .toolbar {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .search-inp {
+      width: 240px;
+      height: 32px;
+      padding: 0 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 13px;
+    }
+
+    .search-inp::placeholder { color: #bfbfbf; }
+
+    .btn-primary {
+      height: 32px;
+      padding: 0 16px;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .btn-primary:hover { background: var(--primary-hover); }
+
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .data-table th {
+      text-align: left;
+      padding: 14px 16px;
+      background: #fafafa;
+      color: var(--text-secondary);
+      font-weight: 500;
+      font-size: 13px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .data-table td {
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+
+    .data-table tr:last-child td { border-bottom: none; }
+
+    .actions {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .action-ico {
+      width: 22px;
+      height: 22px;
+      cursor: pointer;
+      color: var(--primary);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      background: none;
+      padding: 0;
+    }
+
+    .action-ico:hover { opacity: 0.75; }
+    .action-ico svg { width: 18px; height: 18px; }
+
+    .pagination-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      margin-top: 24px;
+      color: var(--text-secondary);
+      font-size: 13px;
+    }
+
+    .page-size {
+      padding: 4px 8px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: #fff;
+    }
+
+    .page-btns {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .page-btn {
+      min-width: 32px;
+      height: 32px;
+      border: 1px solid var(--border);
+      background: #fff;
+      border-radius: var(--radius);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .page-btn.active {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+
+    .float-contact {
+      position: fixed;
+      right: 24px;
+      bottom: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      z-index: 90;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .float-contact .bubble {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: var(--primary);
+      box-shadow: var(--shadow);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 22px;
+    }
+
+    /* ========== DETAIL PAGE layout ========== */
+    #page-detail .detail-wrap {
+      display: flex;
+      padding-top: 56px;
+      min-height: 100vh;
+    }
+
+    .detail-sidebar {
+      width: 300px;
+      background: #fff;
+      border-right: 1px solid var(--border);
+      position: fixed;
+      left: 0;
+      top: 56px;
+      bottom: 0;
+      z-index: 50;
+      display: flex;
+      flex-direction: column;
+      padding: 0;
+    }
+
+    .detail-sidebar-body {
+      padding: 20px 16px 24px;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .basic-section-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #111827;
+      padding-bottom: 12px;
+      margin-bottom: 4px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .basic-field {
+      margin-top: 20px;
+    }
+
+    .basic-field:first-of-type {
+      margin-top: 16px;
+    }
+
+    .basic-label {
+      font-size: 13px;
+      color: rgba(0, 0, 0, 0.45);
+      margin-bottom: 8px;
+      line-height: 1.4;
+    }
+
+    .basic-value {
+      font-size: 15px;
+      color: rgba(0, 0, 0, 0.85);
+      font-weight: 500;
+      line-height: 1.5;
+    }
+
+    .basic-value.is-empty {
+      color: #9ca3af;
+      font-weight: 400;
+    }
+
+    .tag-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 12px;
+      border-radius: 4px;
+      background: #f5f5f5;
+      border: 1px solid #e8e8e8;
+      font-size: 13px;
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    .tag-pill .fb-ico {
+      width: 18px;
+      height: 18px;
+      font-size: 11px;
+    }
+
+    .detail-main {
+      margin-left: 300px;
+      flex: 1;
+      background: var(--bg-page);
+      min-height: calc(100vh - 56px);
+      padding-bottom: 40px;
+    }
+
+    .btn-back-home {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 16px;
+      font-size: 14px;
+      font-family: inherit;
+      color: var(--text);
+      background: #fff;
+      border: 1px solid #d9d9d9;
+      border-radius: 6px;
+      cursor: pointer;
+      line-height: 1.4;
+    }
+
+    .btn-back-home:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    .detail-top {
+      background: #fff;
+      padding: 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .detail-top-row1 {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      padding: 14px 24px 12px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .detail-bc {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin: 0;
+      line-height: 1.5;
+    }
+
+    .detail-bc .sep {
+      margin: 0 8px;
+      color: #bfbfbf;
+      font-weight: 400;
+    }
+
+    .detail-bc-current {
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    .detail-filters {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .detail-filter-select {
+      appearance: none;
+      padding: 5px 30px 5px 10px;
+      border: 1px solid #d9d9d9;
+      border-radius: var(--radius);
+      font-size: 13px;
+      color: var(--text);
+      background-color: #fff;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238c8c8c' d='M3 4.5L6 8l3-3.5'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 8px center;
+      font-family: inherit;
+      min-height: 32px;
+      cursor: pointer;
+      max-width: 160px;
+    }
+
+    .detail-tz {
+      font-size: 13px;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      padding: 0 4px;
+    }
+
+    .detail-date-range {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 12px;
+      border: 1px solid #d9d9d9;
+      border-radius: var(--radius);
+      font-size: 13px;
+      color: var(--text);
+      background: #fff;
+      cursor: default;
+      white-space: nowrap;
+    }
+
+    .detail-date-range svg {
+      flex-shrink: 0;
+      opacity: 0.55;
+    }
+
+    .detail-tabs-wrap {
+      display: flex;
+      justify-content: center;
+      padding: 4px 24px 0;
+    }
+
+    .detail-tabs {
+      display: flex;
+      gap: 40px;
+      border-bottom: 1px solid transparent;
+      margin-bottom: -1px;
+    }
+
+    .detail-tab {
+      padding: 12px 4px 10px;
+      color: var(--text-secondary);
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      cursor: pointer;
+      font-size: 14px;
+      background: none;
+      border-top: none;
+      border-left: none;
+      border-right: none;
+      font-family: inherit;
+      line-height: inherit;
+    }
+
+    .detail-tab:hover {
+      color: var(--text);
+    }
+
+    .detail-tab.active {
+      color: var(--primary);
+      font-weight: 500;
+      border-bottom-color: var(--primary);
+    }
+
+    .detail-panel.hidden {
+      display: none !important;
+    }
+
+    .content-km-card {
+      margin-bottom: 20px;
+    }
+
+    .content-km-heading {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 16px;
+    }
+
+    .content-km-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+    }
+
+    .content-km-cell {
+      padding: 16px;
+      background: #fafafa;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+    }
+
+    .content-km-label {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      line-height: 1.4;
+    }
+
+    .info-tip--sm {
+      width: 16px;
+      height: 16px;
+      font-size: 9px;
+      flex-shrink: 0;
+    }
+
+    .content-km-num {
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .content-search-row {
+      position: relative;
+      margin-bottom: 20px;
+    }
+
+    .content-search-input {
+      width: 100%;
+      height: 40px;
+      padding: 0 42px 0 14px;
+      border: 1px solid #d9d9d9;
+      border-radius: var(--radius);
+      font-size: 14px;
+      font-family: inherit;
+    }
+
+    .content-search-input::placeholder {
+      color: #bfbfbf;
+    }
+
+    .content-search-btn {
+      position: absolute;
+      right: 4px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 34px;
+      height: 32px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-secondary);
+      border-radius: var(--radius);
+    }
+
+    .content-search-btn:hover {
+      color: var(--primary);
+    }
+
+    .content-feed {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .feed-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .feed-card-head {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px 8px;
+    }
+
+    .feed-card-meta {
+      padding: 0 16px 12px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    .feed-card-text {
+      padding: 0 16px 14px;
+      font-size: 14px;
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    .feed-card-media {
+      position: relative;
+      background: #1f1f1f;
+      max-height: 340px;
+    }
+
+    .feed-card-media img,
+    .feed-card-media video {
+      width: 100%;
+      display: block;
+      max-height: 340px;
+      object-fit: cover;
+    }
+
+    .feed-play {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.55);
+      border: 2px solid #fff;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      padding-left: 4px;
+      cursor: default;
+    }
+
+    .feed-card-foot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      border-top: 1px solid var(--border);
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .sentiment-pill {
+      font-size: 12px;
+      padding: 2px 12px;
+      border-radius: 4px;
+      background: #e6f7ff;
+      color: #1890ff;
+      border: 1px solid #91d5ff;
+      font-weight: 500;
+    }
+
+    .feed-eng {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .detail-panel-empty {
+      background: #fff;
+      border: 1px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 48px 24px;
+      text-align: center;
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+
+    .overview-km-block {
+      margin-bottom: 20px;
+    }
+
+    .overview-km-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      gap: 12px;
+    }
+
+    .overview-km-head .card-title {
+      margin-bottom: 0;
+    }
+
+    .kpi-label-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .kpi-label-row .label {
+      margin-bottom: 0;
+    }
+
+    .ai-summary-section {
+      background: #e6f7ff;
+      border: 1px solid #91d5ff;
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .ai-summary-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .ai-summary-top h3 {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .ai-summary-lead {
+      font-size: 14px;
+      line-height: 1.65;
+      color: var(--text);
+      margin: 0 0 20px;
+    }
+
+    .ai-mini-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .ai-mini-card {
+      background: #fff;
+      border: 1px solid #bae7ff;
+      border-radius: var(--radius);
+      padding: 16px;
+      box-shadow: var(--shadow);
+    }
+
+    .ai-mini-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 10px;
+    }
+
+    .ai-mini-ico {
+      font-size: 16px;
+      line-height: 1;
+    }
+
+    .ai-mini-card p {
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.55;
+      color: var(--text-secondary);
+    }
+
+    .ai-suggestions {
+      background: #fff;
+      border: 1px solid #bae7ff;
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      box-shadow: var(--shadow);
+    }
+
+    .ai-suggestions-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 14px;
+    }
+
+    .ai-suggestions ol {
+      margin: 0;
+      padding-left: 20px;
+    }
+
+    .ai-suggestions li {
+      margin-bottom: 14px;
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--text);
+    }
+
+    .ai-suggestions li:last-child {
+      margin-bottom: 0;
+    }
+
+    @media (max-width: 1000px) {
+      .ai-mini-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .author-chart-h {
+      height: 280px;
+      position: relative;
+    }
+
+    .author-chart-h--sm {
+      height: 260px;
+    }
+
+    .author-card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .author-card-head .card-title {
+      margin-bottom: 0;
+    }
+
+    .author-persona-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      align-items: stretch;
+    }
+
+    .author-persona-col {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      background: #fafafa;
+      min-height: 280px;
+    }
+
+    .author-persona-col--white {
+      background: #fff;
+    }
+
+    .author-empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 220px;
+      color: var(--text-secondary);
+      text-align: center;
+      padding: 24px;
+    }
+
+    .author-empty-icon {
+      width: 72px;
+      height: 72px;
+      margin-bottom: 16px;
+      opacity: 0.45;
+      color: #8c8c8c;
+    }
+
+    .author-empty-text {
+      font-size: 13px;
+      line-height: 1.5;
+      max-width: 220px;
+    }
+
+    .conv-word-cloud {
+      min-height: 300px;
+      padding: 20px 16px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 12px 18px;
+      line-height: 1.2;
+      background: linear-gradient(180deg, #fafafa 0%, #fff 100%);
+    }
+
+    .conv-word-cloud span {
+      color: #409eff;
+      font-weight: 600;
+      cursor: default;
+      user-select: none;
+    }
+
+    .conv-emoji-cloud {
+      min-height: 260px;
+      padding: 24px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 14px 20px;
+      font-size: 28px;
+      line-height: 1;
+      background: #fafafa;
+    }
+
+    .conv-chart-h {
+      height: 300px;
+      position: relative;
+    }
+
+    .conv-chart-h--topics {
+      height: 340px;
+    }
+
+    .conv-chart-h--time {
+      height: 260px;
+    }
+
+    .conv-chart-h--material {
+      height: 380px;
+    }
+
+    .conv-donut-wrap {
+      padding: 8px 0 4px;
+    }
+
+    .conv-donut-chart-inner {
+      position: relative;
+      height: 220px;
+      max-width: 280px;
+      margin: 0 auto;
+    }
+
+    .conv-donut-center {
+      position: absolute;
+      left: 50%;
+      top: 45%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      pointer-events: none;
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.2;
+    }
+
+    .conv-donut-center span {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-top: 4px;
+    }
+
+    @media (max-width: 1100px) {
+      .content-km-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .author-persona-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .detail-scroll {
+      padding: 20px 24px;
+    }
+
+    .kpi-row {
+      display: flex;
+      flex-direction: row;
+      flex-wrap: nowrap;
+      gap: 16px;
+      margin-bottom: 20px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 4px;
+    }
+
+    .kpi-card {
+      background: var(--bg-card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 20px;
+      border: 1px solid var(--border);
+      flex: 1 1 0;
+      min-width: 160px;
+    }
+
+    .kpi-card .label {
+      color: var(--text-secondary);
+      font-size: 13px;
+      margin-bottom: 8px;
+    }
+
+    .kpi-card .value {
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .info-box {
+      background: #e6f7ff;
+      border: 1px solid #91d5ff;
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .hot-list h4 {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-bottom: 10px;
+      font-weight: 600;
+    }
+
+    .hot-list ul { list-style: none; }
+    .hot-list li {
+      padding: 6px 0;
+      border-bottom: 1px dashed #bae7ff;
+      font-size: 13px;
+    }
+    .hot-list li a { color: var(--primary); }
+
+    .card {
+      background: var(--bg-card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 20px;
+      margin-bottom: 20px;
+      border: 1px solid var(--border);
+    }
+
+    .card-title {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: var(--text);
+    }
+
+    .chart-h { height: 280px; position: relative; }
+
+    .row-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    .row-2 .card { margin-bottom: 0; }
+
+    .donut-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 260px;
+    }
+
+    .legend-inline {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      margin-top: 8px;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .legend-item { display: flex; align-items: center; gap: 6px; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; }
+
+    .posts-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+
+    .post-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: #fff;
+      box-shadow: var(--shadow);
+    }
+
+    .post-head {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #d9d9d9;
+    }
+
+    .post-body { padding: 12px; font-size: 13px; color: var(--text); }
+    .post-img {
+      width: 100%;
+      height: 140px;
+      object-fit: cover;
+      background: #f0f0f0;
+    }
+
+    .post-foot {
+      display: flex;
+      gap: 16px;
+      padding: 10px 12px;
+      border-top: 1px solid var(--border);
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .detail-table-wrap {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      margin: 0 -4px;
+      padding: 4px;
+    }
+
+    .detail-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      color: #111827;
+    }
+
+    .detail-table.perf-table {
+      min-width: 1520px;
+    }
+
+    .perf-head {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding-bottom: 14px;
+      margin-bottom: 4px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .info-tip {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 1px solid #d1d5db;
+      background: #fff;
+      color: #9ca3af;
+      font-size: 11px;
+      font-weight: 700;
+      font-style: italic;
+      line-height: 1;
+      cursor: help;
+      padding: 0;
+      flex-shrink: 0;
+    }
+
+    .detail-table th, .detail-table td {
+      padding: 14px 16px;
+      text-align: left;
+      border-bottom: 1px solid #e5e7eb;
+      white-space: nowrap;
+    }
+
+    .detail-table th {
+      background: #f9fafb;
+      color: #6b7280;
+      font-weight: 500;
+      font-size: 12px;
+    }
+
+    .detail-table th.th-plain {
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .th-sort {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border-bottom: 1px dashed #d1d5db;
+      padding-bottom: 2px;
+      color: #6b7280;
+      cursor: default;
+    }
+
+    .th-sort .sort-ico {
+      width: 12px;
+      height: 14px;
+      flex-shrink: 0;
+      opacity: 0.65;
+    }
+
+    .detail-table tbody tr.row-total {
+      background: #f8f9fa;
+      font-weight: 600;
+    }
+
+    .detail-table tbody tr.row-total td {
+      border-bottom: none;
+    }
+
+    .plat-cell {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .fb-ico {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #1877f2;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+
+    .posts-pager {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 20px;
+    }
+
+    .posts-pager button {
+      min-width: 32px;
+      height: 32px;
+      border: 1px solid var(--border);
+      background: #fff;
+      border-radius: var(--radius);
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .posts-pager button.active {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+
+    @media (max-width: 1200px) {
+      .row-2 { grid-template-columns: 1fr; }
+      .posts-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Shared header -->
+  <header class="app-header">
+    <div class="header-left">
+      <div class="logo">
+        <img src="joinmc-logo.png" alt="JoinMC" class="logo-img" width="120" height="32" />
+      </div>
+      <button type="button" class="btn-back-home header-back" id="btn-back-home" aria-label="Back to task list">← Back</button>
+      <div class="env-select">
+        JoinMcDemo
+        <span class="chev"></span>
+      </div>
+    </div>
+    <div class="header-right">
+      <a class="header-link" href="#">Follow Official Account</a>
+      <div class="icon-grid" title="Apps"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+      <div class="user-dd">Carson <span class="chev"></span></div>
+    </div>
+  </header>
+
+  <!-- LIST PAGE -->
+  <div id="page-list">
+    <div class="main-wrap">
+      <aside class="list-sidebar">
+        <div class="list-icon-rail">
+          <div class="rail-icon" title="Dashboard">◉</div>
+          <div class="rail-icon" title="Reports">▤</div>
+          <div class="rail-icon active" title="Tasks">≡</div>
+          <div class="rail-icon" title="Team">👥</div>
+        </div>
+        <div class="list-menu-col">
+          <div class="menu-item active">Listening Tasks</div>
+          <div class="menu-item">Listening Comparison</div>
+        </div>
+      </aside>
+      <main class="list-content">
+        <div class="breadcrumb">Sentiment <strong>&gt;</strong> Social Listening</div>
+        <div class="toolbar">
+          <input class="search-inp" type="search" placeholder="Please enter topic name" />
+          <button type="button" class="btn-primary">Add</button>
+        </div>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Topic</th>
+              <th>Creator</th>
+              <th>Created At</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>FAW TRUCKS</td>
+              <td>Carson</td>
+              <td>2026-03-17 15:28:30</td>
+              <td>
+                <div class="actions">
+                  <button type="button" class="action-ico js-open-detail" title="View data" aria-label="View data">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 16l4-4 4 4 5-7"/></svg>
+                  </button>
+                  <button type="button" class="action-ico" title="Refresh">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.13-3.36L23 10"/><path d="M20.49 15a9 9 0 01-14.13 3.36L1 14"/></svg>
+                  </button>
+                  <button type="button" class="action-ico" title="Delete">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/></svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td>FAW TRUCKS</td>
+              <td>Carson</td>
+              <td>2026-03-17 11:36:19</td>
+              <td>
+                <div class="actions">
+                  <button type="button" class="action-ico" title="View data"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 16l4-4 4 4 5-7"/></svg></button>
+                  <button type="button" class="action-ico" title="Refresh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.13-3.36L23 10"/><path d="M20.49 15a9 9 0 01-14.13 3.36L1 14"/></svg></button>
+                  <button type="button" class="action-ico" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/></svg></button>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td>Jiefang Truck Accident</td>
+              <td>Carson</td>
+              <td>2026-03-17 11:01:52</td>
+              <td>
+                <div class="actions">
+                  <button type="button" class="action-ico" title="View data"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 16l4-4 4 4 5-7"/></svg></button>
+                  <button type="button" class="action-ico" title="Refresh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.13-3.36L23 10"/><path d="M20.49 15a9 9 0 01-14.13 3.36L1 14"/></svg></button>
+                  <button type="button" class="action-ico" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/></svg></button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="pagination-bar">
+          <span>Total 3</span>
+          <select class="page-size"><option>10 / page</option><option>20 / page</option><option>50 / page</option></select>
+          <div class="page-btns">
+            <button type="button" class="page-btn" aria-label="Previous">‹</button>
+            <button type="button" class="page-btn active">1</button>
+            <button type="button" class="page-btn" aria-label="Next">›</button>
+          </div>
+        </div>
+      </main>
+    </div>
+    <div class="float-contact">
+      <span>Contact</span>
+      <div class="bubble">💬</div>
+    </div>
+  </div>
+
+  <!-- DETAIL PAGE -->
+  <div id="page-detail" class="hidden">
+    <div class="detail-wrap">
+      <aside class="detail-sidebar">
+        <div class="detail-sidebar-body">
+          <h2 class="basic-section-title">Basic Information</h2>
+          <div class="basic-field">
+            <div class="basic-label">Topic Name</div>
+            <div class="basic-value">FAW TRUCKS</div>
+          </div>
+          <div class="basic-field">
+            <div class="basic-label">Monitoring Platforms</div>
+            <div class="basic-value">
+              <span class="tag-pill"><span class="fb-ico" aria-hidden="true">f</span> Facebook</span>
+            </div>
+          </div>
+          <div class="basic-field">
+            <div class="basic-label">Keywords Included</div>
+            <div class="basic-value"><span class="tag-pill">FAW TRUCKS</span></div>
+          </div>
+          <div class="basic-field">
+            <div class="basic-label">Target Countries</div>
+            <div class="basic-value is-empty">—</div>
+          </div>
+          <div class="basic-field">
+            <div class="basic-label">Target Languages</div>
+            <div class="basic-value is-empty">—</div>
+          </div>
+          <div class="basic-field">
+            <div class="basic-label">Creation Time</div>
+            <div class="basic-value">2024-03-17 15:28:30</div>
+          </div>
+          <div class="basic-field">
+            <div class="basic-label">Creator</div>
+            <div class="basic-value">Carson</div>
+          </div>
+        </div>
+      </aside>
+      <div class="detail-main">
+        <div class="detail-top">
+          <div class="detail-top-row1">
+            <nav class="detail-bc" aria-label="Breadcrumb">
+              <a href="#" id="link-back-list2">Public Opinion</a>
+              <span class="sep">&gt;</span>
+              <a href="#" id="link-back-list">Social Listening</a>
+              <span class="sep">&gt;</span>
+              <span class="detail-bc-current">FAW TRUCKS Details</span>
+            </nav>
+            <div class="detail-filters">
+              <select class="detail-filter-select" aria-label="Media platforms">
+                <option selected>All Media Platforms</option>
+                <option>Facebook</option>
+                <option>Twitter / X</option>
+              </select>
+              <select class="detail-filter-select" aria-label="Languages">
+                <option selected>All Languages</option>
+                <option>English</option>
+                <option>Thai</option>
+              </select>
+              <select class="detail-filter-select" aria-label="Countries">
+                <option selected>All Countries</option>
+                <option>Thailand</option>
+              </select>
+              <span class="detail-tz">UTC +08:00</span>
+              <div class="detail-date-range">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                <span>2024-02-25 – 2024-03-24</span>
+              </div>
+            </div>
+          </div>
+          <div class="detail-tabs-wrap">
+            <div class="detail-tabs" role="tablist">
+              <button type="button" class="detail-tab active" role="tab" aria-selected="true" data-detail-tab="overview" id="tab-overview">Overview</button>
+              <button type="button" class="detail-tab" role="tab" aria-selected="false" data-detail-tab="content" id="tab-content">Content</button>
+              <button type="button" class="detail-tab" role="tab" aria-selected="false" data-detail-tab="authors" id="tab-authors">Author</button>
+              <button type="button" class="detail-tab" role="tab" aria-selected="false" data-detail-tab="conversations" id="tab-conversations">Conversations</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="detail-scroll">
+          <div id="detail-panel-overview" class="detail-panel">
+          <div class="card overview-km-block">
+            <div class="overview-km-head">
+              <div class="card-title">Key Metrics</div>
+              <button type="button" class="info-tip info-tip--sm" title="Summary metrics for the selected period." aria-label="About Key Metrics">i</button>
+            </div>
+            <div class="kpi-row">
+              <div class="kpi-card">
+                <div class="kpi-label-row">
+                  <span class="label">Mentions</span>
+                  <button type="button" class="info-tip info-tip--sm" title="Total number of mentions captured." aria-label="About Mentions">i</button>
+                </div>
+                <div class="value">6</div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-label-row">
+                  <span class="label">Interactions</span>
+                  <button type="button" class="info-tip info-tip--sm" title="Total likes, comments, shares, and other interactions." aria-label="About Interactions">i</button>
+                </div>
+                <div class="value">195</div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-label-row">
+                  <span class="label">Video Views</span>
+                  <button type="button" class="info-tip info-tip--sm" title="Video play or view counts where available." aria-label="About Video Views">i</button>
+                </div>
+                <div class="value">0</div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-label-row">
+                  <span class="label">Unique Authors</span>
+                  <button type="button" class="info-tip info-tip--sm" title="Distinct accounts that published matching content." aria-label="About Unique Authors">i</button>
+                </div>
+                <div class="value">3</div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-label-row">
+                  <span class="label">Reach</span>
+                  <button type="button" class="info-tip info-tip--sm" title="Estimated audience reach for the content." aria-label="About Reach">i</button>
+                </div>
+                <div class="value">195</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="ai-summary-section">
+            <div class="ai-summary-top">
+              <h3>AI Intelligence Analysis Summary</h3>
+              <button type="button" class="info-tip info-tip--sm" title="Automatically generated summary based on monitored data for this topic." aria-label="About AI Intelligence Analysis Summary">i</button>
+            </div>
+            <p class="ai-summary-lead">Overall volume is low and trending downwards. Interaction performance fluctuates greatly. Sentiment is mainly neutral but lacks positive engagement.</p>
+            <div class="ai-mini-grid">
+              <div class="ai-mini-card">
+                <div class="ai-mini-title"><span class="ai-mini-ico" aria-hidden="true">📊</span> Volume Trend</div>
+                <p>Total volume is 6 mentions. It dropped about 50% the next day, so activity is clearly insufficient.</p>
+              </div>
+              <div class="ai-mini-card">
+                <div class="ai-mini-title"><span class="ai-mini-ico" aria-hidden="true">🙂</span> Sentiment Tendency</div>
+                <p>Neutral sentiment accounts for 100%. There is a lack of positive sentiment and uplifting narratives.</p>
+              </div>
+              <div class="ai-mini-card">
+                <div class="ai-mini-title"><span class="ai-mini-ico" aria-hidden="true">🎯</span> Interaction Effect</div>
+                <p>195 interactions on the first day and 0 on the second day — the swing is unusually large.</p>
+              </div>
+            </div>
+            <div class="ai-suggestions">
+              <div class="ai-suggestions-title">Operational Suggestions</div>
+              <ol>
+                <li><strong>[Increase Content Posting Frequency]</strong> The current daily average volume is only about 3 posts. Raise daily publishing to 5–8 pieces to stabilize the baseline.</li>
+                <li><strong>[Increase Emotionally Engaging Content]</strong> With 100% neutral sentiment, design more motivating formats (Q&amp;A, polls, stories) and aim for roughly 30% positive sentiment share.</li>
+                <li><strong>[Establish an Interaction Rhythm]</strong> To avoid “zero interaction” days, set fixed reply windows (e.g., morning and evening) so daily interactions stay at least around 50.</li>
+                <li><strong>[Optimize Publishing Channels]</strong> You currently rely on a single platform (Platform 1). Expand to 2–3 channels to diversify risk and grow reach.</li>
+                <li><strong>[Introduce Short Video Tests]</strong> Video views are 0. Produce 1–2 short videos as pilots and monitor the lift in engagement and volume.</li>
+              </ol>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Mention Trend</div>
+            <div class="chart-h"><canvas id="chartMention"></canvas></div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Sentiment Trend</div>
+            <div class="chart-h"><canvas id="chartSentimentLine"></canvas></div>
+          </div>
+
+          <div class="row-2">
+            <div class="card">
+              <div class="card-title">Sentiment Distribution</div>
+              <div class="donut-wrap"><canvas id="chartDonut"></canvas></div>
+              <div class="legend-inline">
+                <span class="legend-item"><span class="dot" style="background:var(--positive)"></span> Positive</span>
+                <span class="legend-item"><span class="dot" style="background:var(--neutral)"></span> Neutral</span>
+                <span class="legend-item"><span class="dot" style="background:var(--negative)"></span> Negative</span>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-title">Sentiment Change</div>
+              <div class="chart-h"><canvas id="chartSentimentChange"></canvas></div>
+            </div>
+          </div>
+
+          <div class="row-2">
+            <div class="card">
+              <div class="card-title">Mentions by Platform</div>
+              <div class="chart-h" style="height:220px"><canvas id="chartBarMentions"></canvas></div>
+            </div>
+            <div class="card">
+              <div class="card-title">Reach by Platform</div>
+              <div class="chart-h" style="height:220px"><canvas id="chartBarReach"></canvas></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Language Distribution</div>
+            <div class="chart-h" style="height:200px"><canvas id="chartLang"></canvas></div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Country Distribution</div>
+            <div class="chart-h" style="height:200px"><canvas id="chartCountry"></canvas></div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Total Reach Trend</div>
+            <div class="chart-h"><canvas id="chartReachTrend"></canvas></div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Engagement Trend (Likes, Shares, Comments)</div>
+            <div class="chart-h"><canvas id="chartEngagement"></canvas></div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Top Mentions</div>
+            <div class="posts-grid">
+              <article class="post-card">
+                <div class="post-head">
+                  <div class="avatar"></div>
+                  <div>
+                    <strong>ThaiFleet Daily</strong>
+                    <div style="font-size:12px;color:var(--text-secondary)">Facebook · Mar 15, 2024</div>
+                  </div>
+                  <span style="margin-left:auto;color:var(--primary)">f</span>
+                </div>
+                <img class="post-img" src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=400&q=80" alt="" />
+                <div class="post-body">Proud to see more #FAW TRUCKS on highways — solid choice for our logistics partners in the region.</div>
+                <div class="post-foot">
+                  <span>♥ 12</span><span>💬 3</span><span>↗ 4</span>
+                </div>
+              </article>
+              <article class="post-card">
+                <div class="post-head">
+                  <div class="avatar"></div>
+                  <div>
+                    <strong>Road Haul Co.</strong>
+                    <div style="font-size:12px;color:var(--text-secondary)">Facebook · Mar 14, 2024</div>
+                  </div>
+                  <span style="margin-left:auto;color:var(--primary)">f</span>
+                </div>
+                <img class="post-img" src="https://images.unsplash.com/photo-1566004100535-c51b8ffdb28c?w=400&q=80" alt="" />
+                <div class="post-body">Trial run with FAW TRUCKS completed — fuel numbers look promising for long-distance routes.</div>
+                <div class="post-foot">
+                  <span>♥ 8</span><span>💬 1</span><span>↗ 2</span>
+                </div>
+              </article>
+              <article class="post-card">
+                <div class="post-head">
+                  <div class="avatar"></div>
+                  <div>
+                    <strong>Driver Voice TH</strong>
+                    <div style="font-size:12px;color:var(--text-secondary)">Facebook · Mar 12, 2024</div>
+                  </div>
+                  <span style="margin-left:auto;color:var(--primary)">f</span>
+                </div>
+                <img class="post-img" src="https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?w=400&q=80" alt="" />
+                <div class="post-body">Any owners here using FAW TRUCKS for cold chain? Looking for real-world tips (EN/TH).</div>
+                <div class="post-foot">
+                  <span>♥ 21</span><span>💬 9</span><span>↗ 5</span>
+                </div>
+              </article>
+            </div>
+            <div class="posts-pager">
+              <button type="button" class="active">1</button>
+              <button type="button">2</button>
+              <button type="button">3</button>
+              <button type="button">4</button>
+              <button type="button">5</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="perf-head">
+              <span class="card-title" style="margin-bottom:0">Performance Data by Platform</span>
+              <button type="button" class="info-tip" title="Metrics are aggregated for the selected date range." aria-label="Info">i</button>
+            </div>
+            <div class="detail-table-wrap">
+              <table class="detail-table perf-table">
+                <thead>
+                  <tr>
+                    <th class="th-plain">Platform</th>
+                    <th><span class="th-sort">Mentions<svg class="sort-ico" viewBox="0 0 12 14" aria-hidden="true"><path fill="currentColor" d="M6 0L10 5H2L6 0zM6 14L2 9h8L6 14z"/></svg></span></th>
+                    <th><span class="th-sort">Interactions<svg class="sort-ico" viewBox="0 0 12 14" aria-hidden="true"><path fill="currentColor" d="M6 0L10 5H2L6 0zM6 14L2 9h8L6 14z"/></svg></span></th>
+                    <th><span class="th-sort">Video Views<svg class="sort-ico" viewBox="0 0 12 14" aria-hidden="true"><path fill="currentColor" d="M6 0L10 5H2L6 0zM6 14L2 9h8L6 14z"/></svg></span></th>
+                    <th><span class="th-sort">Unique Authors<svg class="sort-ico" viewBox="0 0 12 14" aria-hidden="true"><path fill="currentColor" d="M6 0L10 5H2L6 0zM6 14L2 9h8L6 14z"/></svg></span></th>
+                    <th><span class="th-sort">Reach<svg class="sort-ico" viewBox="0 0 12 14" aria-hidden="true"><path fill="currentColor" d="M6 0L10 5H2L6 0zM6 14L2 9h8L6 14z"/></svg></span></th>
+                    <th><span class="th-sort">Positive Mentions<svg class="sort-ico" viewBox="0 0 12 14" aria-hidden="true"><path fill="currentColor" d="M6 0L10 5H2L6 0zM6 14L2 9h8L6 14z"/></svg></span></th>
+                    <th><span class="th-sort">Negative Mentions<svg class="sort-ico" viewBox="0 0 12 14" aria-hidden="true"><path fill="currentColor" d="M6 0L10 5H2L6 0zM6 14L2 9h8L6 14z"/></svg></span></th>
+                    <th><span class="th-sort">Neutral Mentions<svg class="sort-ico" viewBox="0 0 12 14" aria-hidden="true"><path fill="currentColor" d="M6 0L10 5H2L6 0zM6 14L2 9h8L6 14z"/></svg></span></th>
+                    <th><span class="th-sort">Moods / Likes<svg class="sort-ico" viewBox="0 0 12 14" aria-hidden="true"><path fill="currentColor" d="M6 0L10 5H2L6 0zM6 14L2 9h8L6 14z"/></svg></span></th>
+                    <th><span class="th-sort">Comments / Replies<svg class="sort-ico" viewBox="0 0 12 14" aria-hidden="true"><path fill="currentColor" d="M6 0L10 5H2L6 0zM6 14L2 9h8L6 14z"/></svg></span></th>
+                    <th><span class="th-sort">Shares / Reposts<svg class="sort-ico" viewBox="0 0 12 14" aria-hidden="true"><path fill="currentColor" d="M6 0L10 5H2L6 0zM6 14L2 9h8L6 14z"/></svg></span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>
+                      <span class="plat-cell"><span class="fb-ico" aria-hidden="true">f</span> Facebook</span>
+                    </td>
+                    <td>6</td>
+                    <td>195</td>
+                    <td>0</td>
+                    <td>3</td>
+                    <td>195</td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>3</td>
+                    <td>189</td>
+                    <td>5</td>
+                    <td>1</td>
+                  </tr>
+                  <tr class="row-total">
+                    <td>Total</td>
+                    <td>6</td>
+                    <td>195</td>
+                    <td>0</td>
+                    <td>3</td>
+                    <td>195</td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>3</td>
+                    <td>189</td>
+                    <td>5</td>
+                    <td>1</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          </div>
+
+          <div id="detail-panel-content" class="detail-panel hidden">
+            <div class="card content-km-card">
+              <div class="content-km-heading">Key Metrics</div>
+              <div class="content-km-grid">
+                <div class="content-km-cell">
+                  <div class="content-km-label">
+                    Total Monitored Content
+                    <button type="button" class="info-tip info-tip--sm" title="Total posts and pieces of content matched for this topic in the selected period." aria-label="About Total Monitored Content">i</button>
+                  </div>
+                  <div class="content-km-num">3</div>
+                </div>
+                <div class="content-km-cell">
+                  <div class="content-km-label">
+                    Positive Content
+                    <button type="button" class="info-tip info-tip--sm" title="Content classified with positive sentiment." aria-label="About Positive Content">i</button>
+                  </div>
+                  <div class="content-km-num">0</div>
+                </div>
+                <div class="content-km-cell">
+                  <div class="content-km-label">
+                    Negative Content
+                    <button type="button" class="info-tip info-tip--sm" title="Content classified with negative sentiment." aria-label="About Negative Content">i</button>
+                  </div>
+                  <div class="content-km-num">0</div>
+                </div>
+                <div class="content-km-cell">
+                  <div class="content-km-label">
+                    Neutral Content
+                    <button type="button" class="info-tip info-tip--sm" title="Content classified with neutral sentiment." aria-label="About Neutral Content">i</button>
+                  </div>
+                  <div class="content-km-num">3</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="content-search-row">
+              <input type="search" class="content-search-input" id="content-keyword-search" placeholder="Please enter the keywords you want to search for; separate multiple keywords with Enter." autocomplete="off" />
+              <button type="button" class="content-search-btn" aria-label="Search" title="Search">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+              </button>
+            </div>
+
+            <div class="content-feed">
+              <article class="feed-card">
+                <div class="feed-card-head">
+                  <div class="avatar"></div>
+                  <div style="flex:1;min-width:0">
+                    <strong>Ba Rastar</strong>
+                    <div style="font-size:12px;color:var(--text-secondary);margin-top:2px">Facebook</div>
+                  </div>
+                  <span class="fb-ico" aria-hidden="true">f</span>
+                </div>
+                <div class="feed-card-meta">Published at: 2026-03-16 10:22:18 &nbsp;·&nbsp; ID: 8129045612345678</div>
+                <div class="feed-card-text">BANA FAW Trucks</div>
+                <div class="feed-card-media">
+                  <img src="https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?w=800&q=80" alt="" />
+                  <span class="feed-play" aria-hidden="true">▶</span>
+                </div>
+                <div class="feed-card-foot">
+                  <span class="sentiment-pill">Neutral</span>
+                  <div class="feed-eng">
+                    <span title="Likes">♥ 178</span>
+                    <span title="Shares">↗ 0</span>
+                    <span title="Comments">💬 5</span>
+                  </div>
+                </div>
+              </article>
+
+              <article class="feed-card">
+                <div class="feed-card-head">
+                  <div class="avatar"></div>
+                  <div style="flex:1;min-width:0">
+                    <strong>Thai Haul Pages</strong>
+                    <div style="font-size:12px;color:var(--text-secondary);margin-top:2px">Facebook</div>
+                  </div>
+                  <span class="fb-ico" aria-hidden="true">f</span>
+                </div>
+                <div class="feed-card-meta">Published at: 2026-03-15 08:41:55 &nbsp;·&nbsp; ID: 8129045612345012</div>
+                <div class="feed-card-text">Fleet update: evaluating FAW TRUCKS for regional logistics — open to owner feedback.</div>
+                <div class="feed-card-media">
+                  <img src="https://images.unsplash.com/photo-1566004100535-c51b8ffdb28c?w=800&q=80" alt="" />
+                </div>
+                <div class="feed-card-foot">
+                  <span class="sentiment-pill">Neutral</span>
+                  <div class="feed-eng">
+                    <span>♥ 42</span>
+                    <span>↗ 1</span>
+                    <span>💬 2</span>
+                  </div>
+                </div>
+              </article>
+
+              <article class="feed-card">
+                <div class="feed-card-head">
+                  <div class="avatar"></div>
+                  <div style="flex:1;min-width:0">
+                    <strong>Road Life TH</strong>
+                    <div style="font-size:12px;color:var(--text-secondary);margin-top:2px">Facebook</div>
+                  </div>
+                  <span class="fb-ico" aria-hidden="true">f</span>
+                </div>
+                <div class="feed-card-meta">Published at: 2026-03-14 19:03:40 &nbsp;·&nbsp; ID: 8129045612344889</div>
+                <div class="feed-card-text">Spotted a FAW TRUCKS unit on Highway 32 — cabin looks comfortable for long hauls.</div>
+                <div class="feed-card-media">
+                  <img src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&q=80" alt="" />
+                </div>
+                <div class="feed-card-foot">
+                  <span class="sentiment-pill">Neutral</span>
+                  <div class="feed-eng">
+                    <span>♥ 67</span>
+                    <span>↗ 3</span>
+                    <span>💬 8</span>
+                  </div>
+                </div>
+              </article>
+            </div>
+          </div>
+
+          <div id="detail-panel-authors" class="detail-panel hidden">
+            <div class="card">
+              <div class="author-card-head">
+                <div class="card-title">Author Growth Trend</div>
+                <button type="button" class="info-tip info-tip--sm" title="Number of unique authors over the selected period." aria-label="About Author Growth Trend">i</button>
+              </div>
+              <div class="author-chart-h"><canvas id="chartAuthorGrowth"></canvas></div>
+            </div>
+
+            <div class="card">
+              <div class="author-card-head">
+                <div class="card-title">Author Country Distribution</div>
+                <button type="button" class="info-tip info-tip--sm" title="Geographic distribution of authors." aria-label="About Author Country Distribution">i</button>
+              </div>
+              <div class="author-chart-h author-chart-h--sm"><canvas id="chartAuthorCountry"></canvas></div>
+            </div>
+
+            <div class="card">
+              <div class="author-card-head">
+                <div class="card-title">Author Sentiment Change</div>
+                <button type="button" class="info-tip info-tip--sm" title="Sentiment trend among authors over time." aria-label="About Author Sentiment Change">i</button>
+              </div>
+              <div class="author-chart-h"><canvas id="chartAuthorSentiment"></canvas></div>
+            </div>
+
+            <div class="card">
+              <div class="card-title" style="margin-bottom:16px">Author Persona Analysis</div>
+              <div class="author-persona-grid">
+                <div class="author-persona-col">
+                  <div class="author-card-head" style="margin-bottom:12px">
+                    <span style="font-size:14px;font-weight:600;color:var(--text)">Age Distribution</span>
+                    <button type="button" class="info-tip info-tip--sm" title="Age breakdown when available from platform data." aria-label="About Age Distribution">i</button>
+                  </div>
+                  <div class="author-empty">
+                    <svg class="author-empty-icon" viewBox="0 0 64 64" fill="none" aria-hidden="true">
+                      <path d="M8 20h48v36H8V20z" stroke="currentColor" stroke-width="2" fill="none"/>
+                      <path d="M8 28h48M24 20v36" stroke="currentColor" stroke-width="1.5" opacity="0.5"/>
+                      <path d="M18 12l8-6 8 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/>
+                    </svg>
+                    <p class="author-empty-text">No data available at the moment.</p>
+                  </div>
+                </div>
+                <div class="author-persona-col author-persona-col--white">
+                  <div class="author-card-head" style="margin-bottom:12px">
+                    <span style="font-size:14px;font-weight:600;color:var(--text)">Gender Distribution</span>
+                    <button type="button" class="info-tip info-tip--sm" title="Inferred or reported gender when available." aria-label="About Gender Distribution">i</button>
+                  </div>
+                  <div class="author-chart-h author-chart-h--sm"><canvas id="chartAuthorGender"></canvas></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="detail-panel-conversations" class="detail-panel hidden">
+            <div class="row-2">
+              <div class="card">
+                <div class="author-card-head">
+                  <div class="card-title">Most Mentioned Keywords</div>
+                  <button type="button" class="info-tip info-tip--sm" title="Keywords ranked by frequency in monitored content." aria-label="About Most Mentioned Keywords">i</button>
+                </div>
+                <div class="conv-word-cloud" aria-label="Keyword cloud">
+                  <span style="font-size:26px">FAW Trucks</span>
+                  <span style="font-size:22px;opacity:0.95">CarsDB</span>
+                  <span style="font-size:18px;opacity:0.9">AutoShow</span>
+                  <span style="font-size:16px;opacity:0.85">Main Sponsors</span>
+                  <span style="font-size:20px;opacity:0.92">SWM Myanmar</span>
+                  <span style="font-size:15px;opacity:0.8">Moto Hub Car Sales</span>
+                  <span style="font-size:17px;opacity:0.88">A Insurance</span>
+                  <span style="font-size:14px;opacity:0.75">Expo</span>
+                  <span style="font-size:19px;opacity:0.9">Test Drive</span>
+                  <span style="font-size:13px;opacity:0.7">Myanmar</span>
+                </div>
+              </div>
+              <div class="card">
+                <div class="author-card-head">
+                  <div class="card-title">Most Mentioned Topics</div>
+                  <button type="button" class="info-tip info-tip--sm" title="Hashtags and topics by mention count." aria-label="About Most Mentioned Topics">i</button>
+                </div>
+                <div class="conv-chart-h conv-chart-h--topics"><canvas id="chartConvTopics"></canvas></div>
+              </div>
+            </div>
+
+            <div class="row-2">
+              <div class="card">
+                <div class="author-card-head">
+                  <div class="card-title">Most Mentioned Accounts</div>
+                  <button type="button" class="info-tip info-tip--sm" title="Accounts with the highest mention volume." aria-label="About Most Mentioned Accounts">i</button>
+                </div>
+                <div class="conv-chart-h author-chart-h--sm"><canvas id="chartConvAccounts"></canvas></div>
+              </div>
+              <div class="card">
+                <div class="author-card-head">
+                  <div class="card-title">Most Mentioned Emojis</div>
+                  <button type="button" class="info-tip info-tip--sm" title="Frequently used emojis in content." aria-label="About Most Mentioned Emojis">i</button>
+                </div>
+                <div class="conv-emoji-cloud" aria-hidden="true">📌 🎁 😎 📞 😢 🎉 ✨ 🔥 💼 🚗 🏷️ ❤️ 👍 🌟 📷 🎬</div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="author-card-head">
+                <div class="card-title">Time Distribution of Content Posting</div>
+                <button type="button" class="info-tip info-tip--sm" title="When content was published (by hour)." aria-label="About Time Distribution">i</button>
+              </div>
+              <div class="conv-chart-h conv-chart-h--time"><canvas id="chartConvTime"></canvas></div>
+            </div>
+
+            <div class="card">
+              <div class="author-card-head">
+                <div class="card-title">Most Mentioned Domains</div>
+                <button type="button" class="info-tip info-tip--sm" title="External domains linked in content." aria-label="About Most Mentioned Domains">i</button>
+              </div>
+              <div class="conv-chart-h author-chart-h--sm"><canvas id="chartConvDomains"></canvas></div>
+            </div>
+
+            <div class="row-2">
+              <div class="card">
+                <div class="author-card-head">
+                  <div class="card-title">Material Type Distribution</div>
+                  <button type="button" class="info-tip info-tip--sm" title="Format of media attachments." aria-label="About Material Type Distribution">i</button>
+                </div>
+                <div class="conv-chart-h conv-chart-h--material"><canvas id="chartConvMaterial"></canvas></div>
+              </div>
+              <div class="card">
+                <div class="author-card-head">
+                  <div class="card-title">Content Type Distribution</div>
+                  <button type="button" class="info-tip info-tip--sm" title="Posts vs. comments vs. shares." aria-label="About Content Type Distribution">i</button>
+                </div>
+                <div class="conv-donut-wrap">
+                  <div class="conv-donut-chart-inner">
+                    <canvas id="chartConvContentType"></canvas>
+                    <div class="conv-donut-center">6<span>Mentions</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var listEl = document.getElementById("page-list");
+      var detailEl = document.getElementById("page-detail");
+      var charts = [];
+      var authorCharts = [];
+      var authorChartsBuilt = false;
+      var conversationCharts = [];
+      var conversationChartsBuilt = false;
+
+      var appHeaderEl = document.querySelector(".app-header");
+
+      function showList() {
+        listEl.classList.remove("hidden");
+        detailEl.classList.add("hidden");
+        if (appHeaderEl) appHeaderEl.classList.remove("is-detail");
+        charts.forEach(function (c) { try { c.destroy(); } catch (e) {} });
+        charts = [];
+        authorCharts.forEach(function (c) { try { c.destroy(); } catch (e) {} });
+        authorCharts = [];
+        authorChartsBuilt = false;
+        conversationCharts.forEach(function (c) { try { c.destroy(); } catch (e) {} });
+        conversationCharts = [];
+        conversationChartsBuilt = false;
+      }
+
+      function showDetail() {
+        listEl.classList.add("hidden");
+        detailEl.classList.remove("hidden");
+        if (appHeaderEl) appHeaderEl.classList.add("is-detail");
+        setDetailTab("overview");
+        window.scrollTo(0, 0);
+        requestAnimationFrame(initCharts);
+      }
+
+      document.querySelector(".js-open-detail").addEventListener("click", showDetail);
+      document.getElementById("link-back-list").addEventListener("click", function (e) {
+        e.preventDefault();
+        showList();
+      });
+      document.getElementById("link-back-list2").addEventListener("click", function (e) {
+        e.preventDefault();
+        showList();
+      });
+
+      document.getElementById("btn-back-home").addEventListener("click", function () {
+        showList();
+      });
+
+      var panelOverview = document.getElementById("detail-panel-overview");
+      var panelContent = document.getElementById("detail-panel-content");
+      var panelAuthors = document.getElementById("detail-panel-authors");
+      var panelConversations = document.getElementById("detail-panel-conversations");
+      var detailTabButtons = document.querySelectorAll("[data-detail-tab]");
+
+      function setDetailTab(name) {
+        detailTabButtons.forEach(function (btn) {
+          var on = btn.getAttribute("data-detail-tab") === name;
+          btn.classList.toggle("active", on);
+          btn.setAttribute("aria-selected", on ? "true" : "false");
+        });
+        panelOverview.classList.toggle("hidden", name !== "overview");
+        panelContent.classList.toggle("hidden", name !== "content");
+        panelAuthors.classList.toggle("hidden", name !== "authors");
+        panelConversations.classList.toggle("hidden", name !== "conversations");
+        if (name === "overview") {
+          requestAnimationFrame(function () {
+            charts.forEach(function (c) {
+              try {
+                c.resize();
+              } catch (e) {}
+            });
+          });
+        }
+        if (name === "authors") {
+          requestAnimationFrame(initAuthorCharts);
+        }
+        if (name === "conversations") {
+          requestAnimationFrame(initConversationCharts);
+        }
+      }
+
+      detailTabButtons.forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          setDetailTab(btn.getAttribute("data-detail-tab"));
+        });
+      });
+
+      var dates = ["2024-03-11", "2024-03-12", "2024-03-13", "2024-03-14", "2024-03-15", "2024-03-16", "2024-03-17"];
+      var mentionSeries = [5, 5, 4, 4, 3, 2, 1];
+
+      function initAuthorCharts() {
+        if (authorChartsBuilt) {
+          requestAnimationFrame(function () {
+            authorCharts.forEach(function (c) {
+              try {
+                c.resize();
+              } catch (e) {}
+            });
+          });
+          return;
+        }
+        authorChartsBuilt = true;
+        var authorDates = ["2024-02-25", "2024-02-26"];
+
+        authorCharts.push(
+          new Chart(document.getElementById("chartAuthorGrowth"), {
+            type: "line",
+            data: {
+              labels: authorDates,
+              datasets: [
+                {
+                  data: [2, 1],
+                  borderColor: "#1890ff",
+                  backgroundColor: "rgba(24, 144, 255, 0.22)",
+                  fill: true,
+                  tension: 0.25,
+                  borderWidth: 2,
+                  pointRadius: 4,
+                  pointBackgroundColor: "#1890ff"
+                }
+              ]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: { legend: { display: false } },
+              scales: {
+                x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+                y: {
+                  beginAtZero: true,
+                  max: 2,
+                  ticks: { stepSize: 1, font: { size: 11 } },
+                  grid: { color: "rgba(0,0,0,0.06)" }
+                }
+              }
+            }
+          })
+        );
+
+        authorCharts.push(
+          new Chart(document.getElementById("chartAuthorCountry"), {
+            type: "bar",
+            data: {
+              labels: ["Other", "Zambia"],
+              datasets: [
+                {
+                  data: [2, 1],
+                  backgroundColor: "#1890ff",
+                  borderRadius: 4
+                }
+              ]
+            },
+            options: {
+              indexAxis: "y",
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: { legend: { display: false } },
+              scales: {
+                x: {
+                  beginAtZero: true,
+                  suggestedMax: 2.5,
+                  ticks: { stepSize: 1, font: { size: 11 } },
+                  grid: { color: "rgba(0,0,0,0.06)" }
+                },
+                y: { grid: { display: false }, ticks: { font: { size: 12 } } }
+              }
+            }
+          })
+        );
+
+        authorCharts.push(
+          new Chart(document.getElementById("chartAuthorSentiment"), {
+            type: "line",
+            data: {
+              labels: authorDates,
+              datasets: [
+                {
+                  label: "Positive Sentiment",
+                  data: [0, 0],
+                  borderColor: "#1890ff",
+                  backgroundColor: "#1890ff",
+                  tension: 0.2,
+                  borderWidth: 2,
+                  pointRadius: 3
+                },
+                {
+                  label: "Negative Sentiment",
+                  data: [0, 0],
+                  borderColor: "#f5222d",
+                  backgroundColor: "#f5222d",
+                  tension: 0.2,
+                  borderWidth: 2,
+                  pointRadius: 3
+                },
+                {
+                  label: "Neutral Sentiment",
+                  data: [2, 1],
+                  borderColor: "#faad14",
+                  backgroundColor: "#faad14",
+                  tension: 0.2,
+                  borderWidth: 2,
+                  pointRadius: 3
+                }
+              ]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  position: "bottom",
+                  labels: {
+                    boxWidth: 8,
+                    padding: 16,
+                    font: { size: 11 },
+                    usePointStyle: true
+                  }
+                }
+              },
+              scales: {
+                x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+                y: {
+                  beginAtZero: true,
+                  max: 2,
+                  ticks: { stepSize: 1, font: { size: 11 } },
+                  grid: { color: "rgba(0,0,0,0.06)" }
+                }
+              }
+            }
+          })
+        );
+
+        authorCharts.push(
+          new Chart(document.getElementById("chartAuthorGender"), {
+            type: "doughnut",
+            data: {
+              labels: ["Male", "Female", "Unknown"],
+              datasets: [
+                {
+                  data: [0, 0, 3],
+                  backgroundColor: ["#3794ff", "#ff6eb4", "#d9d9d9"],
+                  borderWidth: 0
+                }
+              ]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              cutout: "58%",
+              plugins: {
+                legend: {
+                  position: "bottom",
+                  labels: {
+                    boxWidth: 10,
+                    padding: 12,
+                    font: { size: 12 },
+                    generateLabels: function (chart) {
+                      var data = chart.data;
+                      if (data.labels.length && data.datasets.length) {
+                        var ds = data.datasets[0];
+                        return data.labels.map(function (label, i) {
+                          return {
+                            text: label + ": " + ds.data[i],
+                            fillStyle: ds.backgroundColor[i],
+                            hidden: false,
+                            index: i
+                          };
+                        });
+                      }
+                      return [];
+                    }
+                  }
+                }
+              }
+            }
+          })
+        );
+      }
+
+      function initConversationCharts() {
+        if (conversationChartsBuilt) {
+          requestAnimationFrame(function () {
+            conversationCharts.forEach(function (c) {
+              try {
+                c.resize();
+              } catch (e) {}
+            });
+          });
+          return;
+        }
+        conversationChartsBuilt = true;
+
+        var convBlue = "#409eff";
+        var convTeal = "#36cfc9";
+
+        var topicLabels = [
+          "#CarsDB_Expo",
+          "#TestDrive",
+          "#autoshow",
+          "#autoloan",
+          "#autoexpo",
+          "#carshow",
+          "#CarExpo",
+          "#CarsDB",
+          "#expo",
+          "#BMF"
+        ];
+        var topicData = topicLabels.map(function () {
+          return 1;
+        });
+
+        conversationCharts.push(
+          new Chart(document.getElementById("chartConvTopics"), {
+            type: "bar",
+            data: {
+              labels: topicLabels,
+              datasets: [
+                {
+                  data: topicData,
+                  backgroundColor: convBlue,
+                  borderRadius: 4
+                }
+              ]
+            },
+            options: {
+              indexAxis: "y",
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: { legend: { display: false } },
+              scales: {
+                x: { beginAtZero: true, suggestedMax: 1.2, ticks: { stepSize: 1, font: { size: 10 } }, grid: { color: "rgba(0,0,0,0.06)" } },
+                y: { grid: { display: false }, ticks: { font: { size: 11 } } }
+              }
+            }
+          })
+        );
+
+        conversationCharts.push(
+          new Chart(document.getElementById("chartConvAccounts"), {
+            type: "bar",
+            data: {
+              labels: ["FAW Trucks Southern Africa", "FAW Trucks"],
+              datasets: [
+                {
+                  data: [1, 1],
+                  backgroundColor: [convBlue, convTeal],
+                  borderRadius: 4
+                }
+              ]
+            },
+            options: {
+              indexAxis: "y",
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: { legend: { display: false } },
+              scales: {
+                x: { beginAtZero: true, suggestedMax: 1.2, ticks: { stepSize: 1 }, grid: { color: "rgba(0,0,0,0.06)" } },
+                y: { grid: { display: false }, ticks: { font: { size: 12 } } }
+              }
+            }
+          })
+        );
+
+        var hourLabels = [];
+        var hourData = [];
+        var h;
+        for (h = 0; h < 24; h++) {
+          hourLabels.push((h < 10 ? "0" : "") + h + ":00");
+          hourData.push(0);
+        }
+        hourData[7] = 3;
+        hourData[12] = 2;
+        hourData[14] = 2;
+
+        conversationCharts.push(
+          new Chart(document.getElementById("chartConvTime"), {
+            type: "bar",
+            data: {
+              labels: hourLabels,
+              datasets: [
+                {
+                  data: hourData,
+                  backgroundColor: convBlue,
+                  borderRadius: 2
+                }
+              ]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: { legend: { display: false } },
+              scales: {
+                x: {
+                  grid: { display: false },
+                  ticks: { maxRotation: 45, font: { size: 9 }, autoSkip: true, maxTicksLimit: 24 }
+                },
+                y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: "rgba(0,0,0,0.06)" } }
+              }
+            }
+          })
+        );
+
+        conversationCharts.push(
+          new Chart(document.getElementById("chartConvDomains"), {
+            type: "bar",
+            data: {
+              labels: ["m.carsdb.com", "carsdb.com"],
+              datasets: [
+                {
+                  data: [1, 1],
+                  backgroundColor: [convBlue, convTeal],
+                  borderRadius: 4
+                }
+              ]
+            },
+            options: {
+              indexAxis: "y",
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: { legend: { display: false } },
+              scales: {
+                x: { beginAtZero: true, suggestedMax: 1.2, ticks: { stepSize: 1 }, grid: { color: "rgba(0,0,0,0.06)" } },
+                y: { grid: { display: false }, ticks: { font: { size: 12 } } }
+              }
+            }
+          })
+        );
+
+        var matLabels = [
+          "Other",
+          "Video",
+          "Link",
+          "Carousel",
+          "Classic",
+          "Text",
+          "Image",
+          "Animation",
+          "Shorts",
+          "Reels"
+        ];
+        var matData = [2, 1, 0, 0, 0, 0, 0, 0, 0, 0];
+        var matColors = matLabels.map(function (_, i) {
+          return i % 2 === 0 ? convBlue : convTeal;
+        });
+
+        conversationCharts.push(
+          new Chart(document.getElementById("chartConvMaterial"), {
+            type: "bar",
+            data: {
+              labels: matLabels,
+              datasets: [
+                {
+                  data: matData,
+                  backgroundColor: matColors,
+                  borderRadius: 4
+                }
+              ]
+            },
+            options: {
+              indexAxis: "y",
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: { legend: { display: false } },
+              scales: {
+                x: { beginAtZero: true, suggestedMax: 2.5, ticks: { stepSize: 1 }, grid: { color: "rgba(0,0,0,0.06)" } },
+                y: { grid: { display: false }, ticks: { font: { size: 11 } } }
+              }
+            }
+          })
+        );
+
+        conversationCharts.push(
+          new Chart(document.getElementById("chartConvContentType"), {
+            type: "doughnut",
+            data: {
+              labels: ["Posts", "Comments", "Shares"],
+              datasets: [
+                {
+                  data: [6, 0, 0],
+                  backgroundColor: ["#409eff", "#69c0ff", "#ffd8bf"],
+                  borderWidth: 0
+                }
+              ]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              cutout: "58%",
+              plugins: {
+                legend: {
+                  position: "bottom",
+                  labels: {
+                    boxWidth: 10,
+                    padding: 14,
+                    font: { size: 12 },
+                    generateLabels: function () {
+                      return [
+                        { text: "Posts 100.00%", fillStyle: "#409eff", hidden: false, index: 0, datasetIndex: 0 },
+                        { text: "Comments 0.00%", fillStyle: "#69c0ff", hidden: false, index: 1, datasetIndex: 0 },
+                        { text: "Shares 0.00%", fillStyle: "#ffd8bf", hidden: false, index: 2, datasetIndex: 0 }
+                      ];
+                    }
+                  }
+                }
+              }
+            }
+          })
+        );
+      }
+
+      function initCharts() {
+        charts.forEach(function (c) { try { c.destroy(); } catch (e) {} });
+        charts = [];
+
+        var commonLine = {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { display: false }, ticks: { maxRotation: 45, font: { size: 11 } } },
+            y: { beginAtZero: true, min: 0, maxTicksLimit: 6 }
+          }
+        };
+
+        charts.push(new Chart(document.getElementById("chartMention"), {
+          type: "line",
+          data: {
+            labels: dates,
+            datasets: [{
+              data: mentionSeries,
+              borderColor: "#1890ff",
+              backgroundColor: "rgba(24,144,255,0.1)",
+              fill: true,
+              tension: 0.35,
+              borderWidth: 2,
+              pointRadius: 3
+            }]
+          },
+          options: commonLine
+        }));
+
+        charts.push(new Chart(document.getElementById("chartSentimentLine"), {
+          type: "line",
+          data: {
+            labels: dates,
+            datasets: [{
+              label: "Score",
+              data: [3.2, 3, 2.8, 2.5, 2.2, 2, 1.8],
+              borderColor: "#1890ff",
+              backgroundColor: "rgba(24,144,255,0.08)",
+              fill: true,
+              tension: 0.35,
+              borderWidth: 2
+            }]
+          },
+          options: commonLine
+        }));
+
+        charts.push(new Chart(document.getElementById("chartDonut"), {
+          type: "doughnut",
+          data: {
+            labels: ["Positive", "Neutral", "Negative"],
+            datasets: [{
+              data: [0, 5, 0],
+              backgroundColor: ["#52c41a", "#fa8c16", "#f5222d"],
+              borderWidth: 0
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: "62%",
+            plugins: { legend: { display: false } }
+          }
+        }));
+
+        charts.push(new Chart(document.getElementById("chartSentimentChange"), {
+          type: "line",
+          data: {
+            labels: dates,
+            datasets: [
+              { label: "Positive", data: [0, 0, 0, 0, 0, 0, 0], borderColor: "#52c41a", tension: 0.3, borderWidth: 2 },
+              { label: "Neutral", data: [5, 5, 4, 4, 3, 2, 1], borderColor: "#fa8c16", tension: 0.3, borderWidth: 2 },
+              { label: "Negative", data: [0, 0, 0, 0, 0, 0, 0], borderColor: "#f5222d", tension: 0.3, borderWidth: 2 }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: "bottom", labels: { boxWidth: 10, font: { size: 11 } } } },
+            scales: {
+              x: { grid: { display: false } },
+              y: { beginAtZero: true }
+            }
+          }
+        }));
+
+        var barH = {
+          indexAxis: "y",
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { beginAtZero: true },
+            y: { grid: { display: false } }
+          }
+        };
+
+        charts.push(new Chart(document.getElementById("chartBarMentions"), {
+          type: "bar",
+          data: {
+            labels: ["Facebook"],
+            datasets: [{ data: [5], backgroundColor: "#1890ff", borderRadius: 4 }]
+          },
+          options: barH
+        }));
+
+        charts.push(new Chart(document.getElementById("chartBarReach"), {
+          type: "bar",
+          data: {
+            labels: ["Facebook"],
+            datasets: [{ data: [235], backgroundColor: "#1890ff", borderRadius: 4 }]
+          },
+          options: barH
+        }));
+
+        charts.push(new Chart(document.getElementById("chartLang"), {
+          type: "bar",
+          data: {
+            labels: ["English"],
+            datasets: [{ data: [5], backgroundColor: "#1890ff", borderRadius: 4 }]
+          },
+          options: barH
+        }));
+
+        charts.push(new Chart(document.getElementById("chartCountry"), {
+          type: "bar",
+          data: {
+            labels: ["Thailand", "Other"],
+            datasets: [{ data: [4, 1], backgroundColor: ["#1890ff", "#69c0ff"], borderRadius: 4 }]
+          },
+          options: barH
+        }));
+
+        charts.push(new Chart(document.getElementById("chartReachTrend"), {
+          type: "line",
+          data: {
+            labels: dates,
+            datasets: [{
+              data: [260, 255, 248, 240, 230, 225, 235],
+              borderColor: "#1890ff",
+              fill: false,
+              tension: 0.35,
+              borderWidth: 2
+            }]
+          },
+          options: commonLine
+        }));
+
+        charts.push(new Chart(document.getElementById("chartEngagement"), {
+          type: "line",
+          data: {
+            labels: dates,
+            datasets: [
+              { label: "Likes", data: [14, 13, 12, 11, 10, 9, 8], borderColor: "#1890ff", tension: 0.3 },
+              { label: "Shares", data: [6, 5, 5, 4, 4, 3, 3], borderColor: "#52c41a", tension: 0.3 },
+              { label: "Comments", data: [4, 4, 3, 3, 2, 2, 2], borderColor: "#fa8c16", tension: 0.3 }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: "bottom", labels: { boxWidth: 10, font: { size: 11 } } } },
+            scales: {
+              x: { grid: { display: false } },
+              y: { beginAtZero: true }
+            }
+          }
+        }));
+      }
+    })();
+  </script>
+</body>
+</html>
